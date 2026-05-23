@@ -101,6 +101,8 @@ Inventario-Pasteleria/
 ├── setup_db.py
 ├── .gitignore
 └── README.md
+
+
 📌 Descripción de Archivos
 Archivo	Descripción
 inventory_logic.py	Lógica principal del sistema de inventario
@@ -109,6 +111,8 @@ schema.sql	Estructura y triggers de SQLite
 setup_db.py	Script de creación/reinicio de base de datos
 index.html	Frontend en HTML/CSS/JavaScript
 database.db	Base de datos SQLite generada automáticamente
+
+
 👨‍💻 Créditos
 Reglas de Negocio y Diseño
 
