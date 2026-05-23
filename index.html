@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastelería Expert - Panel de Inventario</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #161e31;
+            --bg-card: rgba(22, 30, 49, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary-accent: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            
+            /* Status Colors */
+            --status-green: #10b981;
+            --status-green-glow: rgba(16, 185, 129, 0.15);
+            --status-yellow: #f59e0b;
+            --status-yellow-glow: rgba(245, 158, 11, 0.15);
+            --status-red: #ef4444;
+            --status-red-glow: rgba(239, 68, 68, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .connection-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--status-green);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-weight: 500;
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--status-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--status-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Dashboard Grid */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        /* Glassmorphic Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--card-accent, var(--primary-accent));
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Card States styling */
+        .card.state-ok {
+            --card-accent: var(--status-green);
+            box-shadow: inset 0 0 15px var(--status-green-glow);
+        }
+        .card.state-reorder {
+            --card-accent: var(--status-yellow);
+            box-shadow: inset 0 0 15px var(--status-yellow-glow);
+        }
+        .card.state-out {
+            --card-accent: var(--status-red);
+            box-shadow: inset 0 0 15px var(--status-red-glow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .card-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .state-ok .status-badge {
+            background: var(--status-green-glow);
+            color: var(--status-green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .state-reorder .status-badge {
+            background: var(--status-yellow-glow);
+            color: var(--status-yellow);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            animation: pulse-yellow 2s infinite;
+        }
+
+        .state-out .status-badge {
+            background: var(--status-red-glow);
+            color: var(--status-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        @keyframes pulse-yellow {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        .card-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
+        }
+
+        .card-unit {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* Two Column Content */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Form styling */
+        .form-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            height: fit-content;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        select, input {
+            width: 100%;
+            background: rgba(11, 15, 25, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        button {
+            width: 100%;
+            background: var(--primary-accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.85rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            margin-top: 0.5rem;
+        }
+
+        button:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Side panel logs & alerts */
+        .panel-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .log-list {
+            list-style: none;
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-right: 0.5rem;
+        }
+
+        /* Custom Scrollbar */
+        .log-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .log-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .log-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        .log-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .log-item {
+            background: rgba(11, 15, 25, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .log-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .alert-item {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-left: 4px solid var(--status-red);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            background: var(--status-green);
+        }
+
+        .toast-error {
+            background: var(--status-red);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🍰 Pastelería Expert</h1>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">Control de Inventario Inteligente en Tiempo Real</p>
+            </div>
+            <div class="connection-badge">
+                <div class="connection-dot"></div>
+                <span>SQLite Conectado</span>
+            </div>
+        </header>
+
+        <!-- Sección de Stock -->
+        <h2 class="section-title">📊 Estado del Inventario</h2>
+        <div class="cards-grid" id="inventory-grid">
+            <!-- Cargado Dinámicamente -->
+            <div class="card state-ok">
+                <div class="card-header">
+                    <span class="card-name">Cargando...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Registrar Lote Form -->
+            <div class="form-container">
+                <h2 class="section-title" style="margin-bottom: 1.5rem;">🥣 Registrar Producción</h2>
+                <form id="production-form">
+                    <div class="form-group">
+                        <label for="pastel-select">Seleccionar Pastel</label>
+                        <select id="pastel-select" required>
+                            <!-- Cargado Dinámicamente -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cantidad-input">Cantidad a Producir (unidades)</label>
+                        <input type="number" id="cantidad-input" min="1" step="1" placeholder="Ej. 10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="merma-input">Cantidad de Merma (unidades)</label>
+                        <input type="number" id="merma-input" min="0" step="1" placeholder="Ej. 1" required>
+                    </div>
+                    <button type="submit" id="submit-btn">Registrar Lote</button>
+                </form>
+            </div>
+
+            <!-- Panel de Alertas e Historial -->
+            <div class="panel-container">
+                <!-- Alertas -->
+                <div class="panel">
+                    <h2 class="section-title" style="color: #fca5a5;">⚠️ Alertas de Negocio</h2>
+                    <ul class="log-list" id="alerts-list">
+                        <!-- Cargado Dinámicamente -->
+                        <li style="color: var(--text-secondary); font-style: italic;">Sin alertas de negocio activas.</li>
+                    </ul>
+                </div>
+
+                <!-- Historial -->
+                <div class="panel">
+                    <h2 class="section-title">🕒 Historial de Producción</h2>
+                    <ul class="log-list" id="history-list">
+                        <!-- Cargado Dinámicamente -->
+                        <li style="color: var(--text-secondary); font-style: italic;">No hay registros de producción.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Función para mostrar Toasts
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${isSuccess ? 'toast-success' : 'toast-error'}`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        // Cargar datos del servidor
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) throw new Error('Error al conectar con la base de datos.');
+                
+                const data = await response.json();
+                renderInventory(data.ingredients, data.pasteles);
+                renderAlerts(data.alertas);
+                renderHistory(data.produccion);
+                renderFormSelect(data.pasteles);
+            } catch (error) {
+                console.error(error);
+                showToast(error.message, false);
+            }
+        }
+
+        // Renderizar Tarjetas de Inventario
+        function renderInventory(ingredients, pasteles) {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+
+            // Renderizar Ingredientes
+            ingredients.forEach(ing => {
+                let stateClass = 'state-ok';
+                let stateText = 'Disponible';
+
+                if (ing.cantidad_kg <= 0) {
+                    stateClass = 'state-out';
+                    stateText = 'Agotado';
+                } else if (ing.estado === 'REORDEN') {
+                    stateClass = 'state-reorder';
+                    stateText = 'REORDEN';
+                }
+
+                const card = document.createElement('div');
+                card.className = `card ${stateClass}`;
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="card-name">🌾 ${ing.nombre}</span>
+                        <span class="status-badge">${stateText}</span>
+                    </div>
+                    <div class="card-value">
+                        ${ing.cantidad_kg.toFixed(2)}
+                        <span class="card-unit">kg</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Renderizar Pasteles
+            pasteles.forEach(pst => {
+                let stateClass = 'state-ok';
+                let stateText = 'En Stock';
+
+                if (pst.stock_unidades <= 0) {
+                    stateClass = 'state-out';
+                    stateText = 'Sin Stock';
+                }
+
+                const card = document.createElement('div');
+                card.className = `card ${stateClass}`;
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="card-name">🎂 ${pst.nombre}</span>
+                        <span class="status-badge">${stateText}</span>
+                    </div>
+                    <div class="card-value">
+                        ${pst.stock_unidades}
+                        <span class="card-unit">uds</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Renderizar opciones en el Select del Formulario
+        function renderFormSelect(pasteles) {
+            const select = document.getElementById('pastel-select');
+            const currentValue = select.value;
+            select.innerHTML = '';
+            
+            pasteles.forEach(pst => {
+                const opt = document.createElement('option');
+                opt.value = pst.nombre;
+                opt.textContent = pst.nombre;
+                select.appendChild(opt);
+            });
+
+            if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+                select.value = currentValue;
+            }
+        }
+
+        // Renderizar Alertas
+        function renderAlerts(alerts) {
+            const list = document.getElementById('alerts-list');
+            list.innerHTML = '';
+
+            if (alerts.length === 0) {
+                list.innerHTML = `<li style="color: var(--text-secondary); font-style: italic; padding: 1rem; text-align: center;">Sin alertas de negocio activas.</li>`;
+                return;
+            }
+
+            alerts.forEach(alt => {
+                const li = document.createElement('li');
+                li.className = 'log-item alert-item';
+                li.innerHTML = `
+                    <div><strong>Alerta de Negocio</strong></div>
+                    <div>${alt.mensaje}</div>
+                    <div class="log-meta">
+                        <span>Lote ID: ${alt.id}</span>
+                        <span>${new Date(alt.fecha).toLocaleString()}</span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // Renderizar Historial de Producción
+        function renderHistory(history) {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+
+            if (history.length === 0) {
+                list.innerHTML = `<li style="color: var(--text-secondary); font-style: italic; padding: 1rem; text-align: center;">No hay registros de producción.</li>`;
+                return;
+            }
+
+            history.forEach(run => {
+                const li = document.createElement('li');
+                li.className = 'log-item';
+                const mermaPct = ((run.cantidad_merma / run.cantidad_producida) * 100).toFixed(0);
+                li.innerHTML = `
+                    <div><strong>${run.nombre}</strong></div>
+                    <div>Producido: ${run.cantidad_producida} uds | Merma: ${run.cantidad_merma} uds (${mermaPct}%)</div>
+                    <div class="log-meta">
+                        <span>Lote #${run.id}</span>
+                        <span>${new Date(run.fecha).toLocaleString()}</span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // Event Listener del Formulario de Envío
+        document.getElementById('production-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
+
+            const payload = {
+                pastel_nombre: document.getElementById('pastel-select').value,
+                cantidad_producida: parseFloat(document.getElementById('cantidad-input').value),
+                cantidad_merma: parseFloat(document.getElementById('merma-input').value)
+            };
+
+            try {
+                const response = await fetch('/api/produce', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast(result.message, true);
+                    document.getElementById('cantidad-input').value = '';
+                    document.getElementById('merma-input').value = '';
+                    fetchStatus(); // Recargar datos
+                } else {
+                    throw new Error(result.error || 'Error al procesar producción');
+                }
+            } catch (error) {
+                showToast(error.message, false);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Registrar Lote';
+            }
+        });
+
+        // Loop de actualización cada 5 segundos
+        fetchStatus();
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>

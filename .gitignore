@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite Database (optional to exclude, but keeping it if requested, though generally ignored)
+# database.db
+
+# OS files
+.DS_Store
+Thumbs.db
