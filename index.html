@@ -26,6 +26,8 @@
             --status-yellow-glow: rgba(245, 158, 11, 0.15);
             --status-red: #ef4444;
             --status-red-glow: rgba(239, 68, 68, 0.15);
+            --status-orange: #f97316;
+            --status-orange-glow: rgba(249, 115, 22, 0.15);
         }
 
         * {
@@ -57,6 +59,8 @@
             margin-bottom: 2.5rem;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         h1 {
@@ -70,6 +74,13 @@
             gap: 0.5rem;
         }
 
+        .header-stats {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
         .connection-badge {
             display: flex;
             align-items: center;
@@ -81,6 +92,24 @@
             border-radius: 9999px;
             border: 1px solid rgba(16, 185, 129, 0.2);
             font-weight: 500;
+        }
+
+        .losses-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            font-weight: 500;
+        }
+
+        .losses-val {
+            font-weight: 700;
+            color: var(--status-red);
         }
 
         .connection-dot {
@@ -98,7 +127,7 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        /* Dashboard Grid */
+        /* Dashboard sections */
         .section-title {
             font-size: 1.25rem;
             font-weight: 600;
@@ -109,9 +138,108 @@
             gap: 0.5rem;
         }
 
+        /* Table view for ingredients */
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 2.5rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(11, 15, 25, 0.5);
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.9rem 1.25rem;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Status badging inside table */
+        .table-status {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .table-status.ok {
+            background: var(--status-green-glow);
+            color: var(--status-green);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .table-status.reorder {
+            background: var(--status-yellow-glow);
+            color: var(--status-yellow);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+        }
+
+        .table-status.out {
+            background: var(--status-red-glow);
+            color: var(--status-red);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        /* Expiration Date Styles */
+        .caducidad-badge {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+        }
+
+        .caducidad-badge.warning {
+            background: var(--status-orange-glow);
+            color: var(--status-orange);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            animation: pulse-orange 2s infinite;
+        }
+
+        .caducidad-badge.expired {
+            background: var(--status-red-glow);
+            color: var(--status-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            font-weight: 600;
+        }
+
+        @keyframes pulse-orange {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        /* Cakes Grid view */
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-bottom: 3rem;
         }
@@ -127,6 +255,9 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .card::before {
@@ -145,25 +276,14 @@
             box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
         }
 
-        /* Card States styling */
-        .card.state-ok {
-            --card-accent: var(--status-green);
-            box-shadow: inset 0 0 15px var(--status-green-glow);
-        }
-        .card.state-reorder {
-            --card-accent: var(--status-yellow);
-            box-shadow: inset 0 0 15px var(--status-yellow-glow);
-        }
-        .card.state-out {
-            --card-accent: var(--status-red);
-            box-shadow: inset 0 0 15px var(--status-red-glow);
-        }
+        .card.state-ok { --card-accent: var(--status-green); }
+        .card.state-out { --card-accent: var(--status-red); }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .card-name {
@@ -172,44 +292,11 @@
             color: var(--text-primary);
         }
 
-        .status-badge {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.25rem 0.6rem;
-            border-radius: 6px;
-            text-transform: uppercase;
-        }
-
-        .state-ok .status-badge {
-            background: var(--status-green-glow);
-            color: var(--status-green);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .state-reorder .status-badge {
-            background: var(--status-yellow-glow);
-            color: var(--status-yellow);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-            animation: pulse-yellow 2s infinite;
-        }
-
-        .state-out .status-badge {
-            background: var(--status-red-glow);
-            color: var(--status-red);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        @keyframes pulse-yellow {
-            0% { opacity: 0.8; }
-            50% { opacity: 1; }
-            100% { opacity: 0.8; }
-        }
-
         .card-value {
             font-size: 2.2rem;
             font-weight: 700;
             color: #fff;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             display: flex;
             align-items: baseline;
             gap: 0.25rem;
@@ -221,7 +308,34 @@
             font-weight: 400;
         }
 
-        /* Forms Layout Grid */
+        /* Action Buttons */
+        .action-btn-red {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            box-shadow: none;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .action-btn-red:hover {
+            background: var(--status-red-glow);
+            border-color: var(--status-red);
+            color: #fff;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+            transform: none;
+        }
+
+        /* Workspace Grid for inputs */
         .workspace-grid {
             display: grid;
             grid-template-columns: 1.6fr 1.4fr;
@@ -240,7 +354,6 @@
             gap: 2rem;
         }
 
-        /* Glassmorphic Form Card */
         .form-container {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -331,7 +444,7 @@
             width: 50px;
         }
 
-        button {
+        button.form-submit-btn {
             width: 100%;
             background: var(--primary-accent);
             color: #fff;
@@ -346,14 +459,10 @@
             margin-top: 0.5rem;
         }
 
-        button:hover {
+        button.form-submit-btn:hover {
             background: #4f46e5;
             transform: translateY(-1px);
             box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
         }
 
         /* Side panel logs & alerts */
@@ -381,7 +490,6 @@
             padding-right: 0.5rem;
         }
 
-        /* Custom Scrollbar */
         .log-list::-webkit-scrollbar, .recipe-builder::-webkit-scrollbar {
             width: 6px;
         }
@@ -444,13 +552,8 @@
             opacity: 1;
         }
 
-        .toast-success {
-            background: var(--status-green);
-        }
-
-        .toast-error {
-            background: var(--status-red);
-        }
+        .toast-success { background: var(--status-green); }
+        .toast-error { background: var(--status-red); }
     </style>
 </head>
 <body>
@@ -458,17 +561,46 @@
         <header>
             <div>
                 <h1>🍰 Pastelería Expert</h1>
-                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">Control de Inventario Inteligente y Recetario Dinámico</p>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">Gestión de Operaciones Reales e Inventario</p>
             </div>
-            <div class="connection-badge">
-                <div class="connection-dot"></div>
-                <span>SQLite Conectado</span>
+            <div class="header-stats">
+                <!-- Contador de pérdidas mensuales -->
+                <div class="losses-badge" id="monthly-losses-container">
+                    <span>📉 Pérdidas del Mes:</span>
+                    <span class="losses-val" id="monthly-losses-val">0.00</span>
+                </div>
+                <div class="connection-badge">
+                    <div class="connection-dot"></div>
+                    <span>SQLite Conectado</span>
+                </div>
             </div>
         </header>
 
-        <!-- Sección de Stock -->
-        <h2 class="section-title">📊 Estado del Inventario</h2>
-        <div class="cards-grid" id="inventory-grid">
+        <!-- Sección de Insumos (Tabla Compacta para escalar) -->
+        <h2 class="section-title">🌾 Estado de los Insumos (Ingredientes)</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ingrediente</th>
+                        <th>Stock Actual</th>
+                        <th>Estado</th>
+                        <th>Fecha de Caducidad</th>
+                        <th style="text-align: right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="ingredients-table-body">
+                    <!-- Cargado Dinámicamente -->
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">Cargando ingredientes...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sección de Productos Terminados (Visual Grid) -->
+        <h2 class="section-title">🎂 Pasteles en Stock</h2>
+        <div class="cards-grid" id="pasteles-grid">
             <!-- Cargado Dinámicamente -->
         </div>
 
@@ -495,7 +627,7 @@
                                 <input type="number" id="merma-input" min="0" step="1" placeholder="Ej. 1" required>
                             </div>
                         </div>
-                        <button type="submit" id="submit-btn">Registrar Lote</button>
+                        <button type="submit" class="form-submit-btn" id="submit-btn">Registrar Lote</button>
                     </form>
                 </div>
 
@@ -507,7 +639,7 @@
                             <label for="ing-nombre-input">Nombre del Ingrediente</label>
                             <input type="text" id="ing-nombre-input" placeholder="Ej. Crema batida, Harina integral" required>
                         </div>
-                        <div class="form-group" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                             <div>
                                 <label for="ing-stock-input">Stock Inicial</label>
                                 <input type="number" id="ing-stock-input" min="0" step="0.01" placeholder="Ej. 5.5" required>
@@ -522,7 +654,11 @@
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" id="submit-ing-btn" style="background-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">Guardar Ingrediente</button>
+                        <div class="form-group">
+                            <label for="ing-caducidad-input">Fecha de Caducidad</label>
+                            <input type="date" id="ing-caducidad-input" required>
+                        </div>
+                        <button type="submit" class="form-submit-btn" id="submit-ing-btn" style="background-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">Guardar Ingrediente</button>
                     </form>
                 </div>
 
@@ -541,10 +677,10 @@
                         <div class="form-group">
                             <label>Configurar Receta (Ingredientes Consumidos por Unidad)</label>
                             <div class="recipe-builder" id="recipe-builder-list">
-                                <!-- Cargado Dinámicamente de los ingredientes disponibles -->
+                                <!-- Cargado Dinámicamente -->
                             </div>
                         </div>
-                        <button type="submit" id="submit-prod-btn">Guardar Producto</button>
+                        <button type="submit" class="form-submit-btn" id="submit-prod-btn">Guardar Producto</button>
                     </form>
                 </div>
             </div>
@@ -576,7 +712,7 @@
     <script>
         let availableIngredients = [];
 
-        // Función para mostrar Toasts
+        // Mostrar Notificaciones Toast
         function showToast(message, isSuccess = true) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -595,55 +731,102 @@
                 const data = await response.json();
                 availableIngredients = data.ingredients;
                 
-                renderInventory(data.ingredients, data.pasteles);
+                renderIngredientsTable(data.ingredients);
+                renderPastelesGrid(data.pasteles);
                 renderAlerts(data.alertas);
                 renderHistory(data.produccion);
                 renderFormSelects(data.pasteles);
                 renderRecipeBuilder(data.ingredients);
+                renderLossesSummary(data.monthly_losses);
             } catch (error) {
                 console.error(error);
                 showToast(error.message, false);
             }
         }
 
-        // Renderizar Tarjetas de Inventario
-        function renderInventory(ingredients, pasteles) {
-            const grid = document.getElementById('inventory-grid');
-            grid.innerHTML = '';
+        // Renderizar Resumen de Pérdidas Mensuales
+        function renderLossesSummary(monthlyLosses) {
+            const valSpan = document.getElementById('monthly-losses-val');
+            if (!monthlyLosses || monthlyLosses.length === 0) {
+                valSpan.textContent = 'Sin pérdidas';
+                return;
+            }
+            
+            const summaryString = monthlyLosses
+                .map(loss => `${loss.cantidad.toFixed(1)} ${loss.unidad}`)
+                .join(' | ');
+            valSpan.textContent = summaryString;
+        }
 
-            // Renderizar Ingredientes
+        // Renderizar Tabla Compacta de Ingredientes
+        function renderIngredientsTable(ingredients) {
+            const tbody = document.getElementById('ingredients-table-body');
+            tbody.innerHTML = '';
+
+            if (ingredients.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">No hay ingredientes registrados.</td></tr>`;
+                return;
+            }
+
             ingredients.forEach(ing => {
-                let stateClass = 'state-ok';
+                // Determinar clase de estado de stock
+                let stateClass = 'ok';
                 let stateText = 'Disponible';
-
                 if (ing.cantidad <= 0) {
-                    stateClass = 'state-out';
+                    stateClass = 'out';
                     stateText = 'Agotado';
                 } else if (ing.estado === 'REORDEN') {
-                    stateClass = 'state-reorder';
+                    stateClass = 'reorder';
                     stateText = 'REORDEN';
                 }
 
-                const card = document.createElement('div');
-                card.className = `card ${stateClass}`;
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-name">🌾 ${ing.nombre}</span>
-                        <span class="status-badge">${stateText}</span>
-                    </div>
-                    <div class="card-value">
-                        ${ing.cantidad.toFixed(2)}
-                        <span class="card-unit">${ing.unidad}</span>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
+                // Calcular días para vencimiento
+                let cadBadgeHtml = 'Sin fecha';
+                if (ing.fecha_caducidad) {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const expDate = new Date(ing.fecha_caducidad + 'T00:00:00');
+                    const diffTime = expDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        cadBadgeHtml = `<span class="caducidad-badge expired">⚠️ VENCIDO (${ing.fecha_caducidad})</span>`;
+                    } else if (diffDays <= 5) {
+                        cadBadgeHtml = `<span class="caducidad-badge warning">⚠️ vence en ${diffDays} días</span>`;
+                    } else {
+                        cadBadgeHtml = `<span class="caducidad-badge" style="color: var(--text-secondary);">${ing.fecha_caducidad}</span>`;
+                    }
+                }
 
-            // Renderizar Pasteles
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">🌾 ${ing.nombre}</td>
+                    <td style="font-family: monospace; font-weight: 600;">${ing.cantidad.toFixed(2)} ${ing.unidad}</td>
+                    <td><span class="table-status ${stateClass}">${stateText}</span></td>
+                    <td>${cadBadgeHtml}</td>
+                    <td style="text-align: right;">
+                        <button class="action-btn-red" onclick="promptLoss('ingrediente', ${ing.id}, '${ing.nombre}', '${ing.unidad}')">
+                            🗑️ Registrar Pérdida
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Renderizar Grid de Pasteles
+        function renderPastelesGrid(pasteles) {
+            const grid = document.getElementById('pasteles-grid');
+            grid.innerHTML = '';
+
+            if (pasteles.length === 0) {
+                grid.innerHTML = `<span style="color: var(--text-secondary); font-style: italic; padding: 1rem;">No hay productos registrados.</span>`;
+                return;
+            }
+
             pasteles.forEach(pst => {
                 let stateClass = 'state-ok';
                 let stateText = 'En Stock';
-
                 if (pst.stock_unidades <= 0) {
                     stateClass = 'state-out';
                     stateText = 'Sin Stock';
@@ -652,20 +835,69 @@
                 const card = document.createElement('div');
                 card.className = `card ${stateClass}`;
                 card.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-name">🎂 ${pst.nombre}</span>
-                        <span class="status-badge">${stateText}</span>
+                    <div>
+                        <div class="card-header">
+                            <span class="card-name">🎂 ${pst.nombre}</span>
+                            <span class="status-badge">${stateText}</span>
+                        </div>
+                        <div class="card-value">
+                            ${pst.stock_unidades}
+                            <span class="card-unit">uds</span>
+                        </div>
                     </div>
-                    <div class="card-value">
-                        ${pst.stock_unidades}
-                        <span class="card-unit">uds</span>
+                    <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                        <button class="action-btn-red" style="width: 100%; justify-content: center;" onclick="promptLoss('producto', ${pst.id}, '${pst.nombre}', 'uds')">
+                            🗑️ Registrar Pérdida / Merma
+                        </button>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        // Renderizar opciones en el Select del Formulario de Producción
+        // Prompt interactivo para pérdidas
+        window.promptLoss = async function(tipo, id, nombre, unidad) {
+            const cantStr = prompt(`Registrar pérdida de "${nombre}"\n\nCantidad a dar de baja (${unidad}):`);
+            if (cantStr === null) return; // cancelado
+            
+            const cantidad = parseFloat(cantStr);
+            if (isNaN(cantidad) || cantidad <= 0) {
+                alert("Por favor ingresa una cantidad numérica válida mayor a 0.");
+                return;
+            }
+
+            const motivo = prompt(`Motivo de la baja de "${nombre}" (ej. vencido, dañado, derramado):`);
+            if (motivo === null) return;
+            if (motivo.trim() === "") {
+                alert("El motivo no puede estar vacío.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/perdida', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tipo: tipo,
+                        referencia_id: id,
+                        cantidad: cantidad,
+                        motivo: motivo.trim()
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(result.message || "Pérdida registrada correctamente.", true);
+                    fetchStatus();
+                } else {
+                    throw new Error(result.error || "Error al registrar la pérdida");
+                }
+            } catch (error) {
+                showToast(error.message, false);
+            }
+        };
+
+        // Renderizar opciones en select
         function renderFormSelects(pasteles) {
             const select = document.getElementById('pastel-select');
             const currentValue = select.value;
@@ -683,11 +915,10 @@
             }
         }
 
-        // Renderizar el Constructor de Recetas en el formulario de nuevos pasteles
+        // Renderizar constructor de recetas
         function renderRecipeBuilder(ingredients) {
             const container = document.getElementById('recipe-builder-list');
             
-            // Guardar valores ya escritos en los inputs antes de redibujar
             const savedValues = {};
             const checkedStates = {};
             container.querySelectorAll('.recipe-item').forEach(item => {
@@ -726,7 +957,6 @@
             });
         }
 
-        // Habilitar/Deshabilitar input de receta al marcar check
         window.toggleRecipeInput = function(checkbox) {
             const qtyInput = checkbox.closest('.recipe-item').querySelector('.recipe-qty-input');
             qtyInput.disabled = !checkbox.checked;
@@ -790,10 +1020,9 @@
             });
         }
 
-        // Event Listener del Formulario de Registro de Producción
+        // Formulario Registro Producción
         document.getElementById('production-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const btn = document.getElementById('submit-btn');
             btn.disabled = true;
             btn.textContent = 'Procesando...';
@@ -810,14 +1039,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 const result = await response.json();
 
                 if (response.ok) {
                     showToast(result.message, true);
                     document.getElementById('cantidad-input').value = '';
                     document.getElementById('merma-input').value = '';
-                    fetchStatus(); // Recargar datos
+                    fetchStatus();
                 } else {
                     throw new Error(result.error || 'Error al procesar producción');
                 }
@@ -829,10 +1057,9 @@
             }
         });
 
-        // Event Listener del Formulario de Nuevo Ingrediente
+        // Formulario Nuevo Ingrediente
         document.getElementById('ingredient-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const btn = document.getElementById('submit-ing-btn');
             btn.disabled = true;
             btn.textContent = 'Guardando...';
@@ -840,7 +1067,8 @@
             const payload = {
                 nombre: document.getElementById('ing-nombre-input').value,
                 cantidad_inicial: parseFloat(document.getElementById('ing-stock-input').value),
-                unidad: document.getElementById('ing-unit-select').value
+                unidad: document.getElementById('ing-unit-select').value,
+                fecha_caducidad: document.getElementById('ing-caducidad-input').value
             };
 
             try {
@@ -849,14 +1077,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 const result = await response.json();
 
                 if (response.ok) {
                     showToast(result.message, true);
                     document.getElementById('ing-nombre-input').value = '';
                     document.getElementById('ing-stock-input').value = '';
-                    fetchStatus(); // Recargar datos e ingrediente nuevo
+                    document.getElementById('ing-caducidad-input').value = '';
+                    fetchStatus();
                 } else {
                     throw new Error(result.error || 'Error al guardar ingrediente');
                 }
@@ -868,13 +1096,10 @@
             }
         });
 
-        // Event Listener del Formulario de Nuevo Producto (Pastel con Receta)
+        // Formulario Nuevo Producto
         document.getElementById('product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const btn = document.getElementById('submit-prod-btn');
-            
-            // Validar que al menos haya un ingrediente en la receta
             const recipeItems = document.querySelectorAll('#recipe-builder-list .recipe-item');
             const receta = {};
             let hasIngredients = false;
@@ -890,7 +1115,7 @@
             });
 
             if (!hasIngredients) {
-                showToast("Por favor, marca al menos un ingrediente para la receta de este producto.", false);
+                showToast("Por favor, marca al menos un ingrediente para la receta.", false);
                 return;
             }
 
@@ -909,14 +1134,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 const result = await response.json();
 
                 if (response.ok) {
                     showToast(result.message, true);
                     document.getElementById('prod-nombre-input').value = '';
                     document.getElementById('prod-stock-input').value = '0';
-                    fetchStatus(); // Recargar datos del inventario y el select de producción
+                    fetchStatus();
                 } else {
                     throw new Error(result.error || 'Error al guardar el producto');
                 }

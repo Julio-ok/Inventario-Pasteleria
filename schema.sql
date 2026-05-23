@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS ingredientes (
     nombre TEXT UNIQUE NOT NULL,
     cantidad REAL NOT NULL DEFAULT 0.0 CHECK(cantidad >= 0.0),
     unidad TEXT NOT NULL DEFAULT 'kg',
-    estado TEXT NOT NULL DEFAULT 'OK' CHECK(estado IN ('OK', 'REORDEN'))
+    estado TEXT NOT NULL DEFAULT 'OK' CHECK(estado IN ('OK', 'REORDEN')),
+    fecha_caducidad TEXT NOT NULL DEFAULT '' -- Fecha en formato YYYY-MM-DD
 );
 
 -- Tabla de Pasteles/Productos
@@ -41,6 +42,18 @@ CREATE TABLE IF NOT EXISTS produccion (
 CREATE TABLE IF NOT EXISTS alertas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     mensaje TEXT NOT NULL,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Pérdidas de Inventario (Operaciones Reales)
+CREATE TABLE IF NOT EXISTS perdidas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT CHECK(tipo IN ('ingrediente', 'producto')),
+    referencia_id INTEGER NOT NULL,
+    nombre_item TEXT NOT NULL,
+    cantidad REAL NOT NULL CHECK(cantidad > 0.0),
+    unidad TEXT NOT NULL,
+    motivo TEXT NOT NULL,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

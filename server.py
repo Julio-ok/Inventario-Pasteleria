@@ -13,7 +13,8 @@ from inventory_logic import (
     registrar_produccion, 
     InsufficientIngredientsError, 
     crear_ingrediente, 
-    crear_producto_con_receta
+    crear_producto_con_receta,
+    registrar_perdida
 )
 
 PORT = 8080
@@ -40,6 +41,8 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
             self.handle_api_crear_ingrediente()
         elif self.path == "/api/producto":
             self.handle_api_crear_producto()
+        elif self.path == "/api/perdida":
+            self.handle_api_crear_perdida()
         else:
             self.send_error(404, "Endpoint no encontrado")
 
@@ -65,10 +68,17 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
             conn.execute("PRAGMA foreign_keys = ON;")
             cursor = conn.cursor()
 
-            # 1. Ingredientes (incluyendo 'cantidad' y 'unidad')
-            cursor.execute("SELECT id, nombre, cantidad, unidad, estado FROM ingredientes;")
+            # 1. Ingredientes (incluyendo 'cantidad', 'unidad', y 'fecha_caducidad')
+            cursor.execute("SELECT id, nombre, cantidad, unidad, estado, fecha_caducidad FROM ingredientes;")
             ingredients = [
-                {"id": r[0], "nombre": r[1], "cantidad": r[2], "unidad": r[3], "estado": r[4]} 
+                {
+                    "id": r[0], 
+                    "nombre": r[1], 
+                    "cantidad": r[2], 
+                    "unidad": r[3], 
+                    "estado": r[4],
+                    "fecha_caducidad": r[5]
+                } 
                 for r in cursor.fetchall()
             ]
 
@@ -93,13 +103,23 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
                 for r in cursor.fetchall()
             ]
 
+            # 5. Pérdidas mensuales acumuladas por unidad
+            cursor.execute("""
+                SELECT SUM(cantidad), unidad 
+                FROM perdidas 
+                WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now', 'localtime') 
+                GROUP BY unidad;
+            """)
+            monthly_losses = [{"cantidad": r[0], "unidad": r[1]} for r in cursor.fetchall()]
+
             conn.close()
 
             self.send_json({
                 "ingredients": ingredients,
                 "pasteles": pasteles,
                 "alertas": alertas,
-                "produccion": produccion
+                "produccion": produccion,
+                "monthly_losses": monthly_losses
             })
 
         except Exception as e:
@@ -119,7 +139,6 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"error": "Falta el nombre del pastel."}, 400)
                 return
 
-            # Ejecutar lógica del negocio
             registrar_produccion(DB_PATH, pastel_nombre, cantidad_producida, cantidad_merma)
             
             self.send_json({
@@ -142,8 +161,9 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
             nombre = payload.get("nombre")
             cantidad_inicial = float(payload.get("cantidad_inicial", 0))
             unidad = payload.get("unidad", "kg")
+            fecha_caducidad = payload.get("fecha_caducidad", "")
             
-            ing_id = crear_ingrediente(DB_PATH, nombre, cantidad_inicial, unidad)
+            ing_id = crear_ingrediente(DB_PATH, nombre, cantidad_inicial, unidad, fecha_caducidad)
             self.send_json({
                 "message": f"Ingrediente '{nombre}' agregado exitosamente con {cantidad_inicial} {unidad}.",
                 "id": ing_id
@@ -161,13 +181,35 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
             payload = json.loads(post_data.decode('utf-8'))
             nombre = payload.get("nombre")
             stock_inicial = int(payload.get("stock_inicial", 0))
-            receta = payload.get("receta", {}) # dict de ingrediente_nombre -> cantidad_requerida
+            receta = payload.get("receta", {})
             
             pastel_id = crear_producto_con_receta(DB_PATH, nombre, stock_inicial, receta)
             self.send_json({
                 "message": f"Producto '{nombre}' creado exitosamente con {stock_inicial} unidades iniciales.",
                 "id": pastel_id
             })
+        except ValueError as e:
+            self.send_json({"error": str(e)}, 400)
+        except Exception as e:
+            self.send_json({"error": f"Error interno: {str(e)}"}, 500)
+
+    def handle_api_crear_perdida(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        
+        try:
+            payload = json.loads(post_data.decode('utf-8'))
+            tipo = payload.get("tipo")
+            referencia_id = int(payload.get("referencia_id", 0))
+            cantidad = float(payload.get("cantidad", 0))
+            motivo = payload.get("motivo")
+            
+            registrar_perdida(DB_PATH, tipo, referencia_id, cantidad, motivo)
+            self.send_json({
+                "message": f"Pérdida de {cantidad} registrada correctamente."
+            })
+        except InsufficientIngredientsError as e:
+            self.send_json({"error": str(e)}, 400)
         except ValueError as e:
             self.send_json({"error": str(e)}, 400)
         except Exception as e:
@@ -187,7 +229,7 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
 def run_server():
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), PasteleriaAPIHandler) as httpd:
-        print(f"Servidor API actualizado iniciado en http://localhost:{PORT}")
+        print(f"Servidor API actualizado v3.0 iniciado en http://localhost:{PORT}")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
