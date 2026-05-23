@@ -5,15 +5,26 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS ingredientes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT UNIQUE NOT NULL,
-    cantidad_kg REAL NOT NULL DEFAULT 0.0 CHECK(cantidad_kg >= 0.0),
+    cantidad REAL NOT NULL DEFAULT 0.0 CHECK(cantidad >= 0.0),
+    unidad TEXT NOT NULL DEFAULT 'kg',
     estado TEXT NOT NULL DEFAULT 'OK' CHECK(estado IN ('OK', 'REORDEN'))
 );
 
--- Tabla de Pasteles
+-- Tabla de Pasteles/Productos
 CREATE TABLE IF NOT EXISTS pasteles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT UNIQUE NOT NULL,
     stock_unidades INTEGER NOT NULL DEFAULT 0 CHECK(stock_unidades >= 0)
+);
+
+-- Tabla de Recetas (Relación Muchos a Muchos)
+CREATE TABLE IF NOT EXISTS recetas (
+    pastel_id INTEGER NOT NULL,
+    ingrediente_id INTEGER NOT NULL,
+    cantidad_requerida REAL NOT NULL CHECK(cantidad_requerida > 0.0),
+    PRIMARY KEY (pastel_id, ingrediente_id),
+    FOREIGN KEY (pastel_id) REFERENCES pasteles(id) ON DELETE CASCADE,
+    FOREIGN KEY (ingrediente_id) REFERENCES ingredientes(id) ON DELETE CASCADE
 );
 
 -- Tabla de Registro de Producción
@@ -40,7 +51,7 @@ FOR EACH ROW
 BEGIN
     UPDATE ingredientes
     SET estado = CASE
-        WHEN NEW.nombre = 'Harina' AND NEW.cantidad_kg < 10.0 THEN 'REORDEN'
+        WHEN NEW.nombre = 'Harina' AND NEW.cantidad < 10.0 THEN 'REORDEN'
         ELSE 'OK'
     END
     WHERE id = NEW.id AND nombre = 'Harina';
@@ -48,12 +59,12 @@ END;
 
 -- REGLA 3: Si la harina baja de 10kg, el estado cambia a REORDEN (al actualizar)
 CREATE TRIGGER IF NOT EXISTS trigger_harina_reorden_update
-AFTER UPDATE OF cantidad_kg ON ingredientes
+AFTER UPDATE OF cantidad ON ingredientes
 FOR EACH ROW
 BEGIN
     UPDATE ingredientes
     SET estado = CASE
-        WHEN NEW.nombre = 'Harina' AND NEW.cantidad_kg < 10.0 THEN 'REORDEN'
+        WHEN NEW.nombre = 'Harina' AND NEW.cantidad < 10.0 THEN 'REORDEN'
         ELSE 'OK'
     END
     WHERE id = NEW.id AND nombre = 'Harina';

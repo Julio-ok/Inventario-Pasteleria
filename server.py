@@ -9,7 +9,12 @@ import sys
 # Añadir el directorio actual al path por si acaso
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from inventory_logic import registrar_produccion, InsufficientIngredientsError
+from inventory_logic import (
+    registrar_produccion, 
+    InsufficientIngredientsError, 
+    crear_ingrediente, 
+    crear_producto_con_receta
+)
 
 PORT = 8080
 DB_PATH = "/home/julioc/antigravity/Inventario-Pasteleria/database.db"
@@ -17,8 +22,6 @@ HTML_PATH = "/home/julioc/antigravity/Inventario-Pasteleria/index.html"
 
 class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
     
-    # Silenciar logs estándar en consola para un reporte más limpio,
-    # pero imprimir si hay errores de servidor.
     def log_message(self, format, *args):
         pass
 
@@ -33,6 +36,10 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/produce":
             self.handle_api_produce()
+        elif self.path == "/api/ingrediente":
+            self.handle_api_crear_ingrediente()
+        elif self.path == "/api/producto":
+            self.handle_api_crear_producto()
         else:
             self.send_error(404, "Endpoint no encontrado")
 
@@ -58,11 +65,14 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
             conn.execute("PRAGMA foreign_keys = ON;")
             cursor = conn.cursor()
 
-            # 1. Ingredientes
-            cursor.execute("SELECT id, nombre, cantidad_kg, estado FROM ingredientes;")
-            ingredients = [{"id": r[0], "nombre": r[1], "cantidad_kg": r[2], "estado": r[3]} for r in cursor.fetchall()]
+            # 1. Ingredientes (incluyendo 'cantidad' y 'unidad')
+            cursor.execute("SELECT id, nombre, cantidad, unidad, estado FROM ingredientes;")
+            ingredients = [
+                {"id": r[0], "nombre": r[1], "cantidad": r[2], "unidad": r[3], "estado": r[4]} 
+                for r in cursor.fetchall()
+            ]
 
-            # 2. Pasteles
+            # 2. Pasteles/Productos
             cursor.execute("SELECT id, nombre, stock_unidades FROM pasteles;")
             pasteles = [{"id": r[0], "nombre": r[1], "stock_unidades": r[2]} for r in cursor.fetchall()]
 
@@ -78,7 +88,10 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
                 ORDER BY p.fecha DESC 
                 LIMIT 15;
             """)
-            produccion = [{"id": r[0], "nombre": r[1], "cantidad_producida": r[2], "cantidad_merma": r[3], "fecha": r[4]} for r in cursor.fetchall()]
+            produccion = [
+                {"id": r[0], "nombre": r[1], "cantidad_producida": r[2], "cantidad_merma": r[3], "fecha": r[4]} 
+                for r in cursor.fetchall()
+            ]
 
             conn.close()
 
@@ -120,6 +133,46 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json({"error": f"Error interno: {str(e)}"}, 500)
 
+    def handle_api_crear_ingrediente(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        
+        try:
+            payload = json.loads(post_data.decode('utf-8'))
+            nombre = payload.get("nombre")
+            cantidad_inicial = float(payload.get("cantidad_inicial", 0))
+            unidad = payload.get("unidad", "kg")
+            
+            ing_id = crear_ingrediente(DB_PATH, nombre, cantidad_inicial, unidad)
+            self.send_json({
+                "message": f"Ingrediente '{nombre}' agregado exitosamente con {cantidad_inicial} {unidad}.",
+                "id": ing_id
+            })
+        except ValueError as e:
+            self.send_json({"error": str(e)}, 400)
+        except Exception as e:
+            self.send_json({"error": f"Error interno: {str(e)}"}, 500)
+
+    def handle_api_crear_producto(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        
+        try:
+            payload = json.loads(post_data.decode('utf-8'))
+            nombre = payload.get("nombre")
+            stock_inicial = int(payload.get("stock_inicial", 0))
+            receta = payload.get("receta", {}) # dict de ingrediente_nombre -> cantidad_requerida
+            
+            pastel_id = crear_producto_con_receta(DB_PATH, nombre, stock_inicial, receta)
+            self.send_json({
+                "message": f"Producto '{nombre}' creado exitosamente con {stock_inicial} unidades iniciales.",
+                "id": pastel_id
+            })
+        except ValueError as e:
+            self.send_json({"error": str(e)}, 400)
+        except Exception as e:
+            self.send_json({"error": f"Error interno: {str(e)}"}, 500)
+
     def send_json(self, data, status_code=200):
         try:
             response = json.dumps(data)
@@ -129,15 +182,12 @@ class PasteleriaAPIHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(response.encode("utf-8"))
         except Exception as e:
-            # Si hay un error enviando, no podemos hacer mucho más que loggearlo
             print(f"Error al enviar respuesta JSON: {str(e)}")
 
 def run_server():
-    # Permitir reusar dirección inmediatamente
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), PasteleriaAPIHandler) as httpd:
-        print(f"Servidor iniciado en http://localhost:{PORT}")
-        print("Presiona Ctrl+C en la terminal para apagarlo.")
+        print(f"Servidor API actualizado iniciado en http://localhost:{PORT}")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

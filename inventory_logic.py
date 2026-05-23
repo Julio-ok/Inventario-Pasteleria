@@ -5,18 +5,94 @@ class InsufficientIngredientsError(Exception):
     """Excepción lanzada cuando no hay suficientes ingredientes para la producción."""
     pass
 
-# Definición de Recetas (Ingredientes necesarios por cada unidad de pastel en kg)
-RECETAS = {
-    "Pastel de Chocolate Tres Leches": {
-        "Harina": 0.5,      # 0.5 kg por pastel
-        "Huevo": 0.2,       # 0.2 kg por pastel (aprox. 4 huevos)
-        "Chocolate": 0.3    # 0.3 kg por pastel
-    }
-}
+def crear_ingrediente(db_path, nombre, cantidad_inicial, unidad):
+    """
+    Inserta un nuevo ingrediente en la base de datos.
+    """
+    if not nombre or nombre.strip() == "":
+        raise ValueError("El nombre del ingrediente no puede estar vacío.")
+    if cantidad_inicial < 0:
+        raise ValueError("La cantidad inicial no puede ser negativa.")
+    if not unidad or unidad.strip() == "":
+        raise ValueError("La unidad de medida no puede estar vacía.")
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO ingredientes (nombre, cantidad, unidad) VALUES (?, ?, ?);",
+            (nombre.strip(), cantidad_inicial, unidad.strip())
+        )
+        conn.commit()
+        print(f"Ingrediente '{nombre}' creado con éxito.")
+        return cursor.lastrowid
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        raise ValueError(f"El ingrediente '{nombre}' ya existe.")
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+def crear_producto_con_receta(db_path, nombre, stock_inicial, receta_dict):
+    """
+    Inserta un nuevo producto (pastel/gelatina) y define su receta.
+    receta_dict: Diccionario mapeando el nombre del ingrediente a la cantidad requerida por unidad de pastel.
+    Ejemplo: {"Harina": 0.5, "Huevo": 4}
+    """
+    if not nombre or nombre.strip() == "":
+        raise ValueError("El nombre del producto no puede estar vacío.")
+    if stock_inicial < 0:
+        raise ValueError("El stock inicial no puede ser negativo.")
+    if not receta_dict:
+        raise ValueError("La receta del producto no puede estar vacía.")
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("BEGIN TRANSACTION;")
+        
+        # 1. Insertar el pastel
+        cursor.execute(
+            "INSERT INTO pasteles (nombre, stock_unidades) VALUES (?, ?);",
+            (nombre.strip(), int(stock_inicial))
+        )
+        pastel_id = cursor.lastrowid
+        
+        # 2. Insertar ingredientes de la receta
+        for ing_nombre, cant_req in receta_dict.items():
+            if float(cant_req) <= 0:
+                raise ValueError(f"La cantidad requerida para '{ing_nombre}' debe ser mayor a 0.")
+            
+            # Obtener el ID del ingrediente
+            cursor.execute("SELECT id FROM ingredientes WHERE nombre = ?;", (ing_nombre,))
+            row = cursor.fetchone()
+            if not row:
+                raise ValueError(f"El ingrediente '{ing_nombre}' especificado en la receta no existe.")
+            ing_id = row[0]
+            
+            # Insertar en la tabla de recetas
+            cursor.execute(
+                "INSERT INTO recetas (pastel_id, ingrediente_id, cantidad_requerida) VALUES (?, ?, ?);",
+                (pastel_id, ing_id, float(cant_req))
+            )
+            
+        conn.commit()
+        print(f"Producto '{nombre}' y su receta creados con éxito.")
+        return pastel_id
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
 
 def registrar_produccion(db_path, pastel_nombre, cantidad_producida, cantidad_merma):
     """
-    Registra la producción de un pastel, descontando los ingredientes de forma atómica.
+    Registra la producción de un pastel, descontando los ingredientes dinámicamente de la base de datos.
     Lanza InsufficientIngredientsError si el stock de ingredientes no es suficiente.
     Añade al stock de pasteles la cantidad neta producida (cantidad_producida - cantidad_merma).
     """
@@ -26,11 +102,6 @@ def registrar_produccion(db_path, pastel_nombre, cantidad_producida, cantidad_me
     if cantidad_merma > cantidad_producida:
         raise ValueError("La merma no puede ser mayor que la cantidad producida.")
 
-    if pastel_nombre not in RECETAS:
-        raise ValueError(f"Receta para '{pastel_nombre}' no encontrada en el sistema.")
-
-    receta = RECETAS[pastel_nombre]
-    
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON;")
     cursor = conn.cursor()
@@ -43,30 +114,29 @@ def registrar_produccion(db_path, pastel_nombre, cantidad_producida, cantidad_me
             raise ValueError(f"El pastel '{pastel_nombre}' no está registrado en la base de datos.")
         pastel_id, stock_actual_pasteles = row
 
-        # 2. Verificar y descontar ingredientes
-        # Obtenemos los stocks actuales de los ingredientes requeridos
-        ingredientes_actuales = {}
-        cursor.execute(
-            f"SELECT nombre, cantidad_kg FROM ingredientes WHERE nombre IN ({','.join(['?']*len(receta))});",
-            list(receta.keys())
-        )
-        for nombre, cantidad in cursor.fetchall():
-            ingredientes_actuales[nombre] = cantidad
-
-        # Validamos que existan todos los ingredientes de la receta en la base de datos
-        for ing in receta.keys():
-            if ing not in ingredientes_actuales:
-                raise ValueError(f"El ingrediente '{ing}' requerido para la receta no existe en la base de datos.")
+        # 2. Obtener ingredientes y cantidades requeridas por la receta de este pastel
+        cursor.execute("""
+            SELECT i.id, i.nombre, r.cantidad_requerida, i.cantidad, i.unidad 
+            FROM recetas r
+            JOIN ingredientes i ON r.ingrediente_id = i.id
+            WHERE r.pastel_id = ?;
+        """, (pastel_id,))
+        receta_rows = cursor.fetchall()
+        
+        if not receta_rows:
+            raise ValueError(f"El producto '{pastel_nombre}' no tiene una receta configurada.")
 
         # Verificar si hay suficiente stock de cada ingrediente
         insuficientes = []
-        for ing, req_unitario in receta.items():
+        receta_a_descontar = [] # Lista de tuplas (ingrediente_id, total_requerido)
+        
+        for ing_id, ing_nombre, req_unitario, disponible, unidad in receta_rows:
             total_requerido = req_unitario * cantidad_producida
-            disponible = ingredientes_actuales[ing]
             if disponible < total_requerido:
                 insuficientes.append(
-                    f"{ing} (Requerido: {total_requerido}kg, Disponible: {disponible}kg)"
+                    f"{ing_nombre} (Requerido: {total_requerido}{unidad}, Disponible: {disponible}{unidad})"
                 )
+            receta_a_descontar.append((ing_id, total_requerido))
         
         if insuficientes:
             raise InsufficientIngredientsError(
@@ -77,11 +147,10 @@ def registrar_produccion(db_path, pastel_nombre, cantidad_producida, cantidad_me
         cursor.execute("BEGIN TRANSACTION;")
 
         # Descontar ingredientes
-        for ing, req_unitario in receta.items():
-            total_requerido = req_unitario * cantidad_producida
+        for ing_id, total_requerido in receta_a_descontar:
             cursor.execute(
-                "UPDATE ingredientes SET cantidad_kg = cantidad_kg - ? WHERE nombre = ?;",
-                (total_requerido, ing)
+                "UPDATE ingredientes SET cantidad = cantidad - ? WHERE id = ?;",
+                (total_requerido, ing_id)
             )
 
         # Aumentar stock de pasteles (solo los aptos para venta: producidos - merma)
@@ -115,66 +184,42 @@ if __name__ == "__main__":
     import subprocess
     subprocess.run(["python3", "/home/julioc/.gemini/antigravity/scratch/setup_db.py"], capture_output=True)
 
-    print("\n--- PRUEBA DE STOCK INICIAL ---")
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT nombre, cantidad_kg, estado FROM ingredientes;")
-    print("Ingredientes:", c.fetchall())
-    c.execute("SELECT nombre, stock_unidades FROM pasteles;")
-    print("Pasteles:", c.fetchall())
-    conn.close()
-
-    print("\n--- PRUEBA 1: Producción exitosa (10 pasteles) ---")
-    # Requiere: Harina (5kg), Huevo (2kg), Chocolate (3kg)
-    # Disponible inicial: Harina (12kg), Huevo (5kg), Chocolate (8kg)
+    print("\n--- PRUEBA DE CREACIÓN DE INGREDIENTE ---")
     try:
-        registrar_produccion(DB_FILE, "Pastel de Chocolate Tres Leches", 10.0, 1.0)
-    except Exception as e:
-        print("ERROR inesperado en Prueba 1:", e)
+        new_ing_id = crear_ingrediente(DB_FILE, "Fresa", 5.0, "kg")
+        # Intentar crear duplicado
+        crear_ingrediente(DB_FILE, "Fresa", 2.0, "kg")
+    except ValueError as e:
+        print("ÉXITO: Se bloqueó duplicado de ingrediente. Mensaje:", e)
 
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT nombre, cantidad_kg, estado FROM ingredientes;")
-    print("Stock de Ingredientes después de la producción:", c.fetchall())
-    c.execute("SELECT nombre, stock_unidades FROM pasteles;")
-    print("Stock de Pasteles (debería ser 5 inicial + 9 neto = 14):", c.fetchall())
-    c.execute("SELECT * FROM alertas;")
-    print("Alertas generadas (debería haber una alerta por la merma del 10%? No, es 10% <= 15%):", c.fetchall())
-    conn.close()
-
-    print("\n--- PRUEBA 2: Producción con merma excesiva (10 pasteles, 2 mermados = 20%) ---")
-    # Requiere: Harina (5kg), Huevo (2kg), Chocolate (3kg)
-    # Disponible actual: Harina (7kg), Huevo (3kg), Chocolate (5kg)
+    print("\n--- PRUEBA DE CREACIÓN DE PRODUCTO CON RECETA DINÁMICA ---")
     try:
-        registrar_produccion(DB_FILE, "Pastel de Chocolate Tres Leches", 10.0, 2.0)
+        # Nuevo pastel "Pastel de Fresa" que requiere:
+        # Harina: 0.4 kg
+        # Huevo: 3 piezas
+        # Fresa: 1.0 kg
+        receta_fresa = {
+            "Harina": 0.4,
+            "Huevo": 3,
+            "Fresa": 1.0
+        }
+        crear_producto_con_receta(DB_FILE, "Pastel de Fresa", 2, receta_fresa)
     except Exception as e:
-        print("ERROR inesperado en Prueba 2:", e)
+        print("ERROR en creación de producto:", e)
 
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT * FROM alertas;")
-    print("Alertas generadas (debería incluir una nueva alerta del 20%):")
-    for a in c.fetchall():
-        print(a)
-    conn.close()
-
-    print("\n--- PRUEBA 3: Intento de producción con stock insuficiente (Bloqueo de stock negativo) ---")
-    # Requiere: Harina (5kg), Huevo (2kg), Chocolate (3kg)
-    # Disponible actual: Harina (2kg), Huevo (1kg), Chocolate (2kg)
+    print("\n--- PRUEBA DE PRODUCCIÓN CON NUEVO PRODUCTO ---")
+    # Stock inicial: Harina(12), Huevo(100), Fresa(5)
+    # Producir: 3 Pasteles de Fresa (requiere Harina: 1.2kg, Huevo: 9 piezas, Fresa: 3.0kg)
     try:
-        registrar_produccion(DB_FILE, "Pastel de Chocolate Tres Leches", 10.0, 0.0)
-        print("ERROR: Se permitió la producción a pesar del stock insuficiente!")
-    except InsufficientIngredientsError as e:
-        print("ÉXITO: Se bloqueó la producción por falta de ingredientes. Mensaje:")
-        print(f"  -> {e}")
+        registrar_produccion(DB_FILE, "Pastel de Fresa", 3.0, 0.0)
     except Exception as e:
-        print("ERROR inesperado en Prueba 3:", e)
+        print("ERROR inesperado en producción de Fresa:", e)
 
     print("\n--- STOCK FINAL DE CONTROL ---")
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT nombre, cantidad_kg, estado FROM ingredientes;")
-    print("Ingredientes (ninguno debe ser negativo):", c.fetchall())
+    c.execute("SELECT nombre, cantidad, unidad, estado FROM ingredientes;")
+    print("Ingredientes:", c.fetchall())
     c.execute("SELECT nombre, stock_unidades FROM pasteles;")
     print("Pasteles:", c.fetchall())
     conn.close()

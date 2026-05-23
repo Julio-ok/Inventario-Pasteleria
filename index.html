@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pastelería Expert - Panel de Inventario</title>
+    <title>Pastelería Expert - Control de Inventario</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,7 +111,7 @@
 
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 1.5rem;
             margin-bottom: 3rem;
         }
@@ -221,27 +221,33 @@
             font-weight: 400;
         }
 
-        /* Two Column Content */
-        .main-grid {
+        /* Forms Layout Grid */
+        .workspace-grid {
             display: grid;
-            grid-template-columns: 1.2fr 1.8fr;
+            grid-template-columns: 1.6fr 1.4fr;
             gap: 2rem;
         }
 
         @media (max-width: 900px) {
-            .main-grid {
+            .workspace-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        /* Form styling */
+        .forms-column {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Glassmorphic Form Card */
         .form-container {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 2rem;
             backdrop-filter: blur(12px);
-            height: fit-content;
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .form-group {
@@ -271,6 +277,58 @@
         select:focus, input:focus {
             border-color: var(--primary-accent);
             box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* Recipe Builder Grid */
+        .recipe-builder {
+            background: rgba(11, 15, 25, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .recipe-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .recipe-chk-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .recipe-chk-label input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .recipe-qty-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recipe-qty-input {
+            width: 70px;
+            padding: 0.4rem;
+            text-align: center;
+            border-radius: 6px;
+        }
+
+        .recipe-unit-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            width: 50px;
         }
 
         button {
@@ -324,17 +382,17 @@
         }
 
         /* Custom Scrollbar */
-        .log-list::-webkit-scrollbar {
+        .log-list::-webkit-scrollbar, .recipe-builder::-webkit-scrollbar {
             width: 6px;
         }
-        .log-list::-webkit-scrollbar-track {
+        .log-list::-webkit-scrollbar-track, .recipe-builder::-webkit-scrollbar-track {
             background: transparent;
         }
-        .log-list::-webkit-scrollbar-thumb {
+        .log-list::-webkit-scrollbar-thumb, .recipe-builder::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
         }
-        .log-list::-webkit-scrollbar-thumb:hover {
+        .log-list::-webkit-scrollbar-thumb:hover, .recipe-builder::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.2);
         }
 
@@ -400,7 +458,7 @@
         <header>
             <div>
                 <h1>🍰 Pastelería Expert</h1>
-                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">Control de Inventario Inteligente en Tiempo Real</p>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">Control de Inventario Inteligente y Recetario Dinámico</p>
             </div>
             <div class="connection-badge">
                 <div class="connection-dot"></div>
@@ -412,34 +470,83 @@
         <h2 class="section-title">📊 Estado del Inventario</h2>
         <div class="cards-grid" id="inventory-grid">
             <!-- Cargado Dinámicamente -->
-            <div class="card state-ok">
-                <div class="card-header">
-                    <span class="card-name">Cargando...</span>
-                </div>
-            </div>
         </div>
 
-        <div class="main-grid">
-            <!-- Registrar Lote Form -->
-            <div class="form-container">
-                <h2 class="section-title" style="margin-bottom: 1.5rem;">🥣 Registrar Producción</h2>
-                <form id="production-form">
-                    <div class="form-group">
-                        <label for="pastel-select">Seleccionar Pastel</label>
-                        <select id="pastel-select" required>
-                            <!-- Cargado Dinámicamente -->
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="cantidad-input">Cantidad a Producir (unidades)</label>
-                        <input type="number" id="cantidad-input" min="1" step="1" placeholder="Ej. 10" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="merma-input">Cantidad de Merma (unidades)</label>
-                        <input type="number" id="merma-input" min="0" step="1" placeholder="Ej. 1" required>
-                    </div>
-                    <button type="submit" id="submit-btn">Registrar Lote</button>
-                </form>
+        <div class="workspace-grid">
+            <!-- Columna de Formularios -->
+            <div class="forms-column">
+                <!-- Formulario 1: Registrar Lote Producción -->
+                <div class="form-container">
+                    <h2 class="section-title" style="margin-bottom: 1.25rem;">🥣 Registrar Producción</h2>
+                    <form id="production-form">
+                        <div class="form-group">
+                            <label for="pastel-select">Seleccionar Pastel / Producto</label>
+                            <select id="pastel-select" required>
+                                <!-- Cargado Dinámicamente -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <label for="cantidad-input">Cantidad a Producir (uds)</label>
+                                <input type="number" id="cantidad-input" min="1" step="1" placeholder="Ej. 10" required>
+                            </div>
+                            <div>
+                                <label for="merma-input">Cantidad de Merma (uds)</label>
+                                <input type="number" id="merma-input" min="0" step="1" placeholder="Ej. 1" required>
+                            </div>
+                        </div>
+                        <button type="submit" id="submit-btn">Registrar Lote</button>
+                    </form>
+                </div>
+
+                <!-- Formulario 2: Dar de Alta Ingrediente -->
+                <div class="form-container">
+                    <h2 class="section-title" style="margin-bottom: 1.25rem;">🌾 Agregar Nuevo Ingrediente</h2>
+                    <form id="ingredient-form">
+                        <div class="form-group">
+                            <label for="ing-nombre-input">Nombre del Ingrediente</label>
+                            <input type="text" id="ing-nombre-input" placeholder="Ej. Crema batida, Harina integral" required>
+                        </div>
+                        <div class="form-group" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+                            <div>
+                                <label for="ing-stock-input">Stock Inicial</label>
+                                <input type="number" id="ing-stock-input" min="0" step="0.01" placeholder="Ej. 5.5" required>
+                            </div>
+                            <div>
+                                <label for="ing-unit-select">Unidad</label>
+                                <select id="ing-unit-select" required>
+                                    <option value="kg">kg (Kilogramos)</option>
+                                    <option value="piezas">piezas</option>
+                                    <option value="litros">litros</option>
+                                    <option value="gramos">gramos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" id="submit-ing-btn" style="background-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">Guardar Ingrediente</button>
+                    </form>
+                </div>
+
+                <!-- Formulario 3: Dar de Alta Producto con Receta -->
+                <div class="form-container">
+                    <h2 class="section-title" style="margin-bottom: 1.25rem;">🎂 Agregar Nuevo Producto y Receta</h2>
+                    <form id="product-form">
+                        <div class="form-group">
+                            <label for="prod-nombre-input">Nombre del Producto (Pastel/Gelatina)</label>
+                            <input type="text" id="prod-nombre-input" placeholder="Ej. Gelatina de Fresa, Tarta de Limón" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-stock-input">Stock Inicial (unidades)</label>
+                            <input type="number" id="prod-stock-input" min="0" step="1" placeholder="Ej. 0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Configurar Receta (Ingredientes Consumidos por Unidad)</label>
+                            <div class="recipe-builder" id="recipe-builder-list">
+                                <!-- Cargado Dinámicamente de los ingredientes disponibles -->
+                            </div>
+                        </div>
+                        <button type="submit" id="submit-prod-btn">Guardar Producto</button>
+                    </form>
+                </div>
             </div>
 
             <!-- Panel de Alertas e Historial -->
@@ -449,7 +556,6 @@
                     <h2 class="section-title" style="color: #fca5a5;">⚠️ Alertas de Negocio</h2>
                     <ul class="log-list" id="alerts-list">
                         <!-- Cargado Dinámicamente -->
-                        <li style="color: var(--text-secondary); font-style: italic;">Sin alertas de negocio activas.</li>
                     </ul>
                 </div>
 
@@ -458,7 +564,6 @@
                     <h2 class="section-title">🕒 Historial de Producción</h2>
                     <ul class="log-list" id="history-list">
                         <!-- Cargado Dinámicamente -->
-                        <li style="color: var(--text-secondary); font-style: italic;">No hay registros de producción.</li>
                     </ul>
                 </div>
             </div>
@@ -469,6 +574,8 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        let availableIngredients = [];
+
         // Función para mostrar Toasts
         function showToast(message, isSuccess = true) {
             const toast = document.getElementById('toast');
@@ -486,10 +593,13 @@
                 if (!response.ok) throw new Error('Error al conectar con la base de datos.');
                 
                 const data = await response.json();
+                availableIngredients = data.ingredients;
+                
                 renderInventory(data.ingredients, data.pasteles);
                 renderAlerts(data.alertas);
                 renderHistory(data.produccion);
-                renderFormSelect(data.pasteles);
+                renderFormSelects(data.pasteles);
+                renderRecipeBuilder(data.ingredients);
             } catch (error) {
                 console.error(error);
                 showToast(error.message, false);
@@ -506,7 +616,7 @@
                 let stateClass = 'state-ok';
                 let stateText = 'Disponible';
 
-                if (ing.cantidad_kg <= 0) {
+                if (ing.cantidad <= 0) {
                     stateClass = 'state-out';
                     stateText = 'Agotado';
                 } else if (ing.estado === 'REORDEN') {
@@ -522,8 +632,8 @@
                         <span class="status-badge">${stateText}</span>
                     </div>
                     <div class="card-value">
-                        ${ing.cantidad_kg.toFixed(2)}
-                        <span class="card-unit">kg</span>
+                        ${ing.cantidad.toFixed(2)}
+                        <span class="card-unit">${ing.unidad}</span>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -555,8 +665,8 @@
             });
         }
 
-        // Renderizar opciones en el Select del Formulario
-        function renderFormSelect(pasteles) {
+        // Renderizar opciones en el Select del Formulario de Producción
+        function renderFormSelects(pasteles) {
             const select = document.getElementById('pastel-select');
             const currentValue = select.value;
             select.innerHTML = '';
@@ -570,6 +680,62 @@
 
             if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
                 select.value = currentValue;
+            }
+        }
+
+        // Renderizar el Constructor de Recetas en el formulario de nuevos pasteles
+        function renderRecipeBuilder(ingredients) {
+            const container = document.getElementById('recipe-builder-list');
+            
+            // Guardar valores ya escritos en los inputs antes de redibujar
+            const savedValues = {};
+            const checkedStates = {};
+            container.querySelectorAll('.recipe-item').forEach(item => {
+                const name = item.dataset.name;
+                const chk = item.querySelector('input[type="checkbox"]');
+                const qtyInput = item.querySelector('.recipe-qty-input');
+                savedValues[name] = qtyInput.value;
+                checkedStates[name] = chk.checked;
+            });
+
+            container.innerHTML = '';
+            if (ingredients.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.9rem;">Crea ingredientes primero para configurar una receta.</span>';
+                return;
+            }
+
+            ingredients.forEach(ing => {
+                const item = document.createElement('div');
+                item.className = 'recipe-item';
+                item.dataset.name = ing.nombre;
+                
+                const isChecked = checkedStates[ing.nombre] || false;
+                const value = savedValues[ing.nombre] !== undefined ? savedValues[ing.nombre] : '';
+
+                item.innerHTML = `
+                    <label class="recipe-chk-label">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleRecipeInput(this)">
+                        <span>${ing.nombre}</span>
+                    </label>
+                    <div class="recipe-qty-container">
+                        <input type="number" class="recipe-qty-input" min="0.001" step="0.001" placeholder="0" value="${value}" ${isChecked ? '' : 'disabled'}>
+                        <span class="recipe-unit-label">${ing.unidad}</span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Habilitar/Deshabilitar input de receta al marcar check
+        window.toggleRecipeInput = function(checkbox) {
+            const qtyInput = checkbox.closest('.recipe-item').querySelector('.recipe-qty-input');
+            qtyInput.disabled = !checkbox.checked;
+            if (checkbox.checked) {
+                qtyInput.focus();
+                qtyInput.required = true;
+            } else {
+                qtyInput.value = '';
+                qtyInput.required = false;
             }
         }
 
@@ -624,7 +790,7 @@
             });
         }
 
-        // Event Listener del Formulario de Envío
+        // Event Listener del Formulario de Registro de Producción
         document.getElementById('production-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -660,6 +826,105 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Registrar Lote';
+            }
+        });
+
+        // Event Listener del Formulario de Nuevo Ingrediente
+        document.getElementById('ingredient-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submit-ing-btn');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            const payload = {
+                nombre: document.getElementById('ing-nombre-input').value,
+                cantidad_inicial: parseFloat(document.getElementById('ing-stock-input').value),
+                unidad: document.getElementById('ing-unit-select').value
+            };
+
+            try {
+                const response = await fetch('/api/ingrediente', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast(result.message, true);
+                    document.getElementById('ing-nombre-input').value = '';
+                    document.getElementById('ing-stock-input').value = '';
+                    fetchStatus(); // Recargar datos e ingrediente nuevo
+                } else {
+                    throw new Error(result.error || 'Error al guardar ingrediente');
+                }
+            } catch (error) {
+                showToast(error.message, false);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Guardar Ingrediente';
+            }
+        });
+
+        // Event Listener del Formulario de Nuevo Producto (Pastel con Receta)
+        document.getElementById('product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submit-prod-btn');
+            
+            // Validar que al menos haya un ingrediente en la receta
+            const recipeItems = document.querySelectorAll('#recipe-builder-list .recipe-item');
+            const receta = {};
+            let hasIngredients = false;
+
+            recipeItems.forEach(item => {
+                const chk = item.querySelector('input[type="checkbox"]');
+                if (chk.checked) {
+                    const name = item.dataset.name;
+                    const qtyInput = item.querySelector('.recipe-qty-input');
+                    receta[name] = parseFloat(qtyInput.value);
+                    hasIngredients = true;
+                }
+            });
+
+            if (!hasIngredients) {
+                showToast("Por favor, marca al menos un ingrediente para la receta de este producto.", false);
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            const payload = {
+                nombre: document.getElementById('prod-nombre-input').value,
+                stock_inicial: parseInt(document.getElementById('prod-stock-input').value),
+                receta: receta
+            };
+
+            try {
+                const response = await fetch('/api/producto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast(result.message, true);
+                    document.getElementById('prod-nombre-input').value = '';
+                    document.getElementById('prod-stock-input').value = '0';
+                    fetchStatus(); // Recargar datos del inventario y el select de producción
+                } else {
+                    throw new Error(result.error || 'Error al guardar el producto');
+                }
+            } catch (error) {
+                showToast(error.message, false);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Guardar Producto';
             }
         });
 
